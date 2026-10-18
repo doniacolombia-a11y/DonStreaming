@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CuentasPro · Gestión de cuentas y perfiles</title>
+  <meta name="description" content="Controla ventas, combos, cuentas madre, perfiles libres, cobros y ganancias de tu negocio de streaming en un solo lugar.">
+  <meta name="theme-color" content="#090b16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="lock" class="lock" hidden>
+    <form id="lockForm" class="lock-box" autocomplete="off">
+      <img class="brand-logo lock-logo" src="icon.svg" alt="" width="72" height="72">
+      <h2>Ingresa tu PIN</h2>
+      <p>Tu panel está protegido</p>
+      <input id="lockPin" type="password" inputmode="numeric" placeholder="••••" aria-label="PIN">
+      <button class="btn pri full" type="submit">Entrar</button>
+      <p id="lockErr" class="err"></p>
+    </form>
+  </div>
+
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <img class="brand-logo" src="icon.svg" alt="" width="34" height="34">
+        <div><b id="brand-name">CuentasPro</b><small>Gestión de streaming</small></div>
+      </div>
+      <nav id="side-nav" class="side-nav"></nav>
+      <div class="side-foot">
+        <button class="btn ghost full" data-a="tema" id="temaBtn">Cambiar tema</button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="top">
+        <div class="top-brand"><img class="brand-logo" src="icon.svg" alt="" width="28" height="28"><b id="top-name">CuentasPro</b></div>
+        <div class="top-act">
+          <button class="ib" data-a="buscar" title="Buscar" aria-label="Buscar"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+          <button class="ib sync-ib" data-a="syncAhora" id="syncBtn" hidden title="Sincronización" aria-label="Sincronización"></button>
+          <button class="ib" data-a="alertas" title="Alertas" aria-label="Alertas" id="bellBtn"></button>
+          <button class="ib" data-a="tema" title="Cambiar tema" aria-label="Cambiar tema" id="temaIb"></button>
+          <button class="avatar-btn" data-a="go" data-id="ajustes" id="avatarBtn" title="Ajustes">CP</button>
+        </div>
+      </header>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <nav id="bnav" class="bnav"></nav>
+  <div id="modal" class="modal"></div>
+  <div id="confirm" class="modal"></div>
+  <div id="toasts" class="toasts"></div>
+  <input type="file" id="fileImport" accept=".json,application/json" hidden>
+  <input type="file" id="logoFile" accept="image/*" hidden>
+
+  <noscript>Esta aplicación necesita JavaScript activado.</noscript>
+  <script src="app.js"></script>
+</body>
+</html>
