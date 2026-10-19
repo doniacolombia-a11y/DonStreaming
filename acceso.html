@@ -7,7 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#090b16">
   <title>Tus accesos</title>
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -75,6 +76,7 @@
         if (it.k) html += '<div class="f"><span>Clave</span><code data-secret="' + esc(it.k) + '" id="k' + n + '">••••••••</code><button data-ver="k' + n + '">Ver</button><button data-copy="' + esc(it.k) + '">Copiar</button></div>';
         if (it.p) html += '<div class="f"><span>Perfil</span><code>' + esc(it.p) + '</code></div>';
         if (it.pin) html += '<div class="f"><span>PIN</span><code>' + esc(it.pin) + '</code><button data-copy="' + esc(it.pin) + '">Copiar</button></div>';
+        if (it.a) html += '<div class="f" style="align-items:flex-start"><span>Datos</span><code style="white-space:pre-wrap">' + esc(it.a) + '</code><button data-copy="' + esc(it.a) + '">Copiar</button></div>';
         html += '<div class="f"><span>Vence</span><code>' + fecha(it.v) + '</code></div></div>';
       });
       html += '<div class="note"><b>Cómo entrar</b><ol><li>Abre la app o la página del servicio.</li><li>Inicia sesión con el correo y la clave.</li><li>Elige <b>solo tu perfil</b>' + (data.i.some(function (x) { return x.pin; }) ? ' y escribe tu PIN' : '') + '.</li></ol></div>';

@@ -68,9 +68,19 @@ Más adelante puedes repartir los perfiles que queden libres con el botón **Rep
 Cada mensaje de entrega lleva un enlace (también lo puedes copiar con el ícono 🔗). El cliente lo abre en su celular, PC, portátil o tablet y ve su correo, clave (oculta hasta que toque *Ver*), perfil, PIN, fecha de vencimiento, botones para copiar y un botón para escribirte a soporte.
 Los datos van dentro del propio enlace, no se guardan en ningún servidor; por eso cualquiera que tenga el enlace puede ver ese acceso, igual que pasa con el mensaje de WhatsApp.
 
+## Pasar tus datos de MrNetflix
+1. En MrNetflix: **Inicio → Mis datos → Exportar datos** (se descarga `MrNetflix_Backup_….json`).
+2. En CuentasPro: **Ajustes → Importar desde MrNetflix** y elige ese archivo.
+3. Revisa el resumen y toca **Importar**. Si tenías datos de ejemplo, deja marcada la casilla para borrarlos primero.
+
+Qué se pasa: los productos quedan como **servicios** (precio y costo), los clientes con su servicio, teléfono, estrellas, fecha de vencimiento y datos de acceso guardados, y las ventas como **pagos** en Reportes, con su costo como gasto del mes (la ganancia da igual que en MrNetflix).
+Puedes importar el archivo las veces que quieras mientras dejas de usar MrNetflix: no se duplica nada, solo se agregan ventas nuevas y se actualizan vencimientos.
+
+Para servicios sin cuenta madre (IPTV, códigos, licencias), el **costo por venta** del servicio se anota solo como gasto en cada venta y renovación. Lo puedes cambiar en **Ajustes → Servicios**.
+
 ## Logo
-**Ajustes → Tu negocio → Subir logo.** Aparece en la app, en la pantalla del PIN y en la **imagen de precios** (Tienda → *Imagen para estados*), lista para WhatsApp o Instagram. Escribe también el **WhatsApp del negocio**: sale en esa imagen y en el botón de soporte del enlace de acceso.
-El ícono que se ve al instalar la app en el celular son los archivos `icon-192.png`, `icon-512.png`, `icon-maskable.png` e `icon.svg`. Si quieres tu logo ahí, reemplázalos por imágenes con el mismo nombre y tamaño.
+La app ya trae el logo de **Don Streaming** como logo y como ícono al instalarla. Si quieres cambiarlo: **Ajustes → Tu negocio → Subir logo.** Aparece en la app, en la pantalla del PIN y en la **imagen de precios** (Tienda → *Imagen para estados*), lista para WhatsApp o Instagram. Escribe también el **WhatsApp del negocio**: sale en esa imagen y en el botón de soporte del enlace de acceso.
+Con la sincronización activa, el logo que subas también se vuelve el ícono de la app instalada y el nombre de tu negocio el nombre de la app (lo sirve la función `netlify/functions/icono.mjs`). En celulares que ya la tenían instalada, el ícono nuevo aparece al desinstalarla y volver a instalarla.
 
 ---
 
@@ -102,6 +112,8 @@ Sube el número de `CACHE` en `sw.js` (por ejemplo `cuentaspro-v3`) para que los
 | `index.html`, `styles.css`, `app.js` | La app |
 | `acceso.html` | Página que ve el cliente al abrir su enlace de acceso |
 | `netlify/functions/sync.mjs` | Guarda y entrega los datos para sincronizar dispositivos |
+| `netlify/functions/icono.mjs` | Entrega tu logo como ícono de la app y el nombre de tu negocio |
+| `marca.jpg`, `base/` | Logo de Don Streaming e íconos por defecto |
 | `package.json` | Le dice a Netlify qué instalar para la función |
 | `netlify.toml` | Configuración de Netlify |
 | `sw.js`, `manifest.webmanifest`, `icon*` | Funcionamiento sin internet e instalación como app |

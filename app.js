@@ -5,6 +5,7 @@
    ===================================================================== */
 
 const KEY = 'cuentaspro_v1';
+const LOGO_BASE = 'marca.jpg'; // logo de Don Streaming incluido en la app
 const $ = (s, el = document) => el.querySelector(s);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -67,9 +68,9 @@ function defaultState() {
   return {
     v: 1,
     settings: {
-      negocio: 'Mi Negocio', usuario: '', simbolo: '$', decimales: 0, pais: '57',
+      negocio: 'Don Streaming', usuario: '', simbolo: '$', decimales: 0, pais: '57',
       diasAviso: 3, diasGracia: 3, duracion: 30, tema: 'dark', pinHash: '', ultimoRespaldo: '',
-      catStock: true, logo: '', whatsapp: '', plantillas: { ...DEF_PLANTILLAS },
+      catStock: true, logo: '', whatsapp: '3028152285', plantillas: { ...DEF_PLANTILLAS },
     },
     servicios,
     combos: [
@@ -88,6 +89,9 @@ function normalizar(d) {
   st.settings.plantillas = { ...DEF_PLANTILLAS, ...((d.settings || {}).plantillas || {}) };
   for (const k of COLS) if (!Array.isArray(st[k])) st[k] = def[k];
   if (!st.borrados || typeof st.borrados !== 'object') st.borrados = {};
+  // Datos de tu negocio por defecto (si aún no los cambiaste)
+  if (!st.settings.negocio || st.settings.negocio === 'Mi Negocio') st.settings.negocio = 'Don Streaming';
+  if (!st.settings.whatsapp) st.settings.whatsapp = '3028152285';
   for (const k of Object.keys(PLANTILLAS_V1)) if (st.settings.plantillas[k] === PLANTILLAS_V1[k]) st.settings.plantillas[k] = DEF_PLANTILLAS[k];
   delete st.app; delete st.exportado;
   return st;
@@ -205,6 +209,7 @@ function lineaLarga(s) {
   if (s.completa) t += ' (cuenta completa)'; else if (s.perfil) t += ` — ${s.perfil}`;
   if (s.pin) t += ` · PIN ${s.pin}`;
   if (c) { t += `\n   📧 ${c.correo}`; if (c.clave) t += `\n   🔑 ${c.clave}`; }
+  if (s.acceso) t += `\n   🔐 ${String(s.acceso).trim().replace(/\n+/g, '\n   ')}`;
   t += `\n   📅 Vence: ${fecha(s.vence)}`;
   return t;
 }
@@ -231,7 +236,7 @@ function enlaceAcceso(subs) {
   const cl = cliente(subs[0]?.clienteId);
   const d = {
     n: S.settings.negocio, w: normTel(S.settings.whatsapp), c: primerNombre(cl?.nombre),
-    i: subs.map(s => { const sv = svc(s.servicioId), cu = cuenta(s.cuentaId); return { s: sv?.nombre || '', co: sv?.color || '#ff6a2b', e: cu?.correo || '', k: cu?.clave || '', p: s.completa ? 'Cuenta completa' : s.perfil || '', pin: s.pin || '', v: s.vence }; }),
+    i: subs.map(s => { const sv = svc(s.servicioId), cu = cuenta(s.cuentaId); return { s: sv?.nombre || '', co: sv?.color || '#ff6a2b', e: cu?.correo || '', k: cu?.clave || '', p: s.completa ? 'Cuenta completa' : s.perfil || '', pin: s.pin || '', v: s.vence, a: s.acceso || '' }; }),
   };
   const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const base = /^https?:/.test(location.protocol) ? new URL('acceso.html', location.href).href.split('#')[0] : 'acceso.html';
@@ -330,10 +335,10 @@ function renderChrome() {
   $('#bnav').innerHTML = html;
   $('#brand-name').textContent = S.settings.negocio;
   $('#top-name').textContent = S.settings.negocio;
-  const logo = S.settings.logo || 'icon.svg';
+  const logo = S.settings.logo || LOGO_BASE;
   document.querySelectorAll('.brand-logo').forEach(img => { if (img.getAttribute('src') !== logo) img.src = logo; });
   const fav = document.querySelector('link[rel=icon]'); if (fav && fav.getAttribute('href') !== logo) fav.href = logo;
-  $('#avatarBtn').innerHTML = S.settings.logo ? `<img src="${S.settings.logo}" alt="">` : esc(iniciales(S.settings.usuario || S.settings.negocio));
+  $('#avatarBtn').innerHTML = `<img src="${esc(logo)}" alt="">`;
   renderSyncIcon();
   const alertas = b.ventas + b.cuentas;
   $('#bellBtn').innerHTML = icon('bell') + (alertas ? `<i class="dot">${alertas > 99 ? '99+' : alertas}</i>` : '');
@@ -435,7 +440,7 @@ function vPanel() {
   if (vacio) {
     h += `<div class="card empty-start" style="margin-bottom:16px"><h3>¡Empecemos! 🚀</h3>
       <p>1) Agrega tus <b>cuentas madre</b> (correo, clave y cuántos perfiles tiene). 2) Registra <b>ventas</b> o <b>combos</b>: la app elige sola la cuenta con perfiles libres. 3) Cobra y entrega por <b>WhatsApp</b> con un toque.</p>
-      <div class="row-btns"><button class="btn pri" data-a="nuevaCuenta">${icon('plus')}Agregar cuenta madre</button><button class="btn" data-a="importCuentas">${icon('upload')}Importar varias</button><button class="btn ghost" data-a="demo">Probar con datos de ejemplo</button></div></div>`;
+      <div class="row-btns"><button class="btn pri" data-a="nuevaCuenta">${icon('plus')}Agregar cuenta madre</button><button class="btn" data-a="importCuentas">${icon('upload')}Importar varias</button><button class="btn" data-a="importar">${icon('upload')}Traer datos de MrNetflix</button><button class="btn ghost" data-a="demo">Probar con datos de ejemplo</button></div></div>`;
   } else if (necesitaRespaldo()) {
     h += `<div class="banner">${icon('download')}<span>Tus datos viven en este navegador. Descarga un respaldo cada semana para no perder nada.</span><button class="btn sm" data-a="exportar">Respaldar</button></div>`;
   }
@@ -503,8 +508,8 @@ function rowSub(s) {
     ${badgeSvc(s.servicioId, true)}
     <div class="grow click" data-a="verCliente" data-id="${s.clienteId}">
       <b>${esc(c?.nombre || 'Cliente eliminado')}</b>
-      <small>${esc(sv?.nombre || '—')} · ${s.completa ? 'Cuenta completa' : esc(s.perfil || 'Sin perfil')}${s.pin ? ' · PIN ' + esc(s.pin) : ''}</small>
-      <small class="mut">${esc(cu?.correo || 'Sin cuenta asignada')}</small>
+      <small>${[esc(sv?.nombre || '—'), s.completa ? 'Cuenta completa' : esc(s.perfil || ''), s.pin ? 'PIN ' + esc(s.pin) : ''].filter(Boolean).join(' · ')}</small>
+      <small class="mut">${cu ? esc(cu.correo) : s.acceso ? '🔐 Datos de acceso propios' : 'Sin cuenta madre'}</small>
     </div>
     <div class="r"><span class="chip ${EST[e].c}">${venceLabel(s)}</span><small>${fecha(s.vence)}</small></div>
     <div class="r"><b>${money(s.precio)}</b>${s.activa ? `<span class="chip ${s.pagado ? 'ok' : 'warn'}">${s.pagado ? 'Pagado' : 'Sin pagar'}</span>` : ''}</div>
@@ -559,7 +564,7 @@ function vClientes() {
     <div class="list">${list.length ? list.map(({ c, subs, worst, pagado, debe }) => `<div class="row">
       ${avatar(c.nombre)}
       <div class="grow click" data-a="verCliente" data-id="${c.id}"><b>${esc(c.nombre)}</b><small>${esc(c.telefono || 'Sin teléfono')}${c.notas ? ' · ' + esc(c.notas) : ''}</small>
-        <div class="mini"><span class="chip">${subs.length} servicio${subs.length === 1 ? '' : 's'}</span>${worst ? `<span class="chip ${EST[worst].c}">${EST[worst].t}</span>` : ''}${debe ? `<span class="chip warn">Debe ${money(debe)}</span>` : ''}</div></div>
+        <div class="mini">${c.estrellas ? `<span class="chip acc">${'★'.repeat(Math.min(5, c.estrellas))}</span>` : ''}<span class="chip">${subs.length} servicio${subs.length === 1 ? '' : 's'}</span>${worst ? `<span class="chip ${EST[worst].c}">${EST[worst].t}</span>` : ''}${debe ? `<span class="chip warn">Debe ${money(debe)}</span>` : ''}</div></div>
       <div class="r"><b>${money(pagado)}</b><small>pagado en total</small></div>
       <div class="acts"><button class="ib wa" title="Abrir chat" data-a="waChat" data-id="${c.id}">${icon('wa')}</button><button class="ib" title="Nueva venta" data-a="nuevaVentaCli" data-id="${c.id}">${icon('plus')}</button></div>
     </div>`).join('') : emptyBig(q ? 'Sin resultados' : 'Aún no tienes clientes', q ? 'Prueba con otra búsqueda.' : 'Se crean solos al registrar una venta, o agrégalos aquí.')}</div>`;
@@ -719,13 +724,15 @@ function vReportes() {
   for (const p of pag) {
     const subs = (p.subIds || []).map(subById).filter(Boolean);
     const tot = sum(subs, 'precio');
+    if (p.servicioId && svc(p.servicioId)) { porSvc[p.servicioId] = (porSvc[p.servicioId] || 0) + p.monto; continue; }
     if (!subs.length || !tot) { porSvc._otros = (porSvc._otros || 0) + p.monto; continue; }
     for (const s of subs) porSvc[s.servicioId] = (porSvc[s.servicioId] || 0) + p.monto * s.precio / tot;
   }
   const svcRows = Object.entries(porSvc).sort((a, b) => b[1] - a[1]);
   const maxSvc = Math.max(1, ...svcRows.map(r => r[1]));
   const topCli = {};
-  for (const p of pag) if (p.clienteId) topCli[p.clienteId] = (topCli[p.clienteId] || 0) + p.monto;
+  const nomPago = {};
+  for (const p of pag) { const k = p.clienteId || 'n:' + (p.clienteNombre || '—'); topCli[k] = (topCli[k] || 0) + p.monto; nomPago[k] = cliente(p.clienteId)?.nombre || p.clienteNombre || 'Cliente eliminado'; }
   const topRows = Object.entries(topCli).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   return `<div class="vh"><div><h2>Reportes</h2><p>Ingresos, gastos y ganancia real de tu negocio</p></div>
@@ -748,12 +755,12 @@ function vReportes() {
         <section class="card"><div class="card-h"><div><h3>Ingresos por servicio</h3><small>${mesLabel(ym)}</small></div></div>
           ${svcRows.length ? svcRows.map(([id, v]) => `<div class="hbar">${id === '_otros' ? '<span class="sv" style="--c:#777">··</span>' : badgeSvc(id)}<div><div class="t"><b>${id === '_otros' ? 'Otros' : esc(svc(id)?.nombre || '—')}</b><span>${money(v)} · ${ing ? Math.round(v / ing * 100) : 0}%</span></div><div class="bar"><i style="width:${v / maxSvc * 100}%"></i></div></div></div>`).join('') : emptyMini('Sin ingresos este mes')}</section>
         <section class="card"><div class="card-h"><div><h3>Mejores clientes</h3><small>${mesLabel(ym)}</small></div></div>
-          ${topRows.length ? topRows.map(([cid, v]) => `<div class="row tight">${avatar(cliente(cid)?.nombre || '?')}<div class="grow click" data-a="verCliente" data-id="${cid}"><b>${esc(cliente(cid)?.nombre || 'Cliente eliminado')}</b></div><b>${money(v)}</b></div>`).join('') : emptyMini('Sin datos')}</section>
+          ${topRows.length ? topRows.map(([cid, v]) => `<div class="row tight">${avatar(nomPago[cid] || '?')}<div class="grow${cliente(cid) ? ' click" data-a="verCliente" data-id="' + cid : ''}"><b>${esc(nomPago[cid])}</b></div><b>${money(v)}</b></div>`).join('') : emptyMini('Sin datos')}</section>
       </div>
     </div>
     <div class="grid2" style="margin-top:14px">
       <section class="card"><div class="card-h"><div><h3>Pagos recibidos</h3><small>${pag.length} en ${mesLabel(ym)}</small></div><button class="btn sm" data-a="exportCSV" data-id="pagos">${icon('download')}CSV</button></div>
-        ${pag.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Método</th><th class="num">Monto</th><th></th></tr></thead><tbody>${pag.map(p => `<tr><td>${fechaCorta(p.fecha)}</td><td>${esc(cliente(p.clienteId)?.nombre || '—')}</td><td>${esc(p.concepto || '')}</td><td>${esc(p.metodo || '')}</td><td class="num">${money(p.monto)}</td><td><button class="ib sm" title="Eliminar pago" data-a="delPago" data-id="${p.id}">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>` : emptyMini('Sin pagos este mes')}</section>
+        ${pag.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Método</th><th class="num">Monto</th><th></th></tr></thead><tbody>${pag.map(p => `<tr><td>${fechaCorta(p.fecha)}</td><td>${esc(cliente(p.clienteId)?.nombre || p.clienteNombre || '—')}</td><td>${esc(p.concepto || '')}</td><td>${esc(p.metodo || '')}</td><td class="num">${money(p.monto)}</td><td><button class="ib sm" title="Eliminar pago" data-a="delPago" data-id="${p.id}">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>` : emptyMini('Sin pagos este mes')}</section>
       <section class="card"><div class="card-h"><div><h3>Gastos</h3><small>cuentas, publicidad, herramientas…</small></div><button class="btn sm" data-a="exportCSV" data-id="gastos">${icon('download')}CSV</button></div>
         ${gas.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th class="num">Monto</th><th></th></tr></thead><tbody>${gas.map(g => `<tr><td>${fechaCorta(g.fecha)}</td><td>${esc(g.concepto)}</td><td>${esc(g.categoria || '')}</td><td class="num">${money(g.monto)}</td><td><button class="ib sm" title="Eliminar gasto" data-a="delGasto" data-id="${g.id}">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>` : emptyMini('Sin gastos este mes')}</section>
     </div>`;
@@ -769,7 +776,7 @@ function vAjustes() {
     <div class="stack">
       <section class="card set-sec"><h3>Tu negocio</h3><p>Aparece en los mensajes y en el catálogo.</p>
         <div class="logo-row">
-          <img class="logo-prev" src="${st.logo || 'icon.svg'}" alt="Logo">
+          <img class="logo-prev" src="${st.logo || LOGO_BASE}" alt="Logo">
           <div><b>Logo</b><p class="hint" style="margin:2px 0 8px">PNG o JPG, ideal cuadrado. Sale en la app, en la pantalla de PIN y en la imagen de precios.</p>
           <div class="row-btns"><button type="button" class="btn sm pri" data-a="subirLogo">${icon('upload')}${st.logo ? 'Cambiar logo' : 'Subir logo'}</button>${st.logo ? '<button type="button" class="btn sm ghost" data-a="quitarLogo">Quitar</button>' : ''}</div></div>
         </div>
@@ -788,7 +795,7 @@ function vAjustes() {
         </form></section>
 
       <section class="card set-sec"><div class="card-h"><div><h3>Servicios</h3><p style="color:var(--mut);font-size:13.5px">Plataformas que vendes, perfiles por cuenta y precio base.</p></div><button class="btn sm" data-a="nuevoServicio">${icon('plus')}Agregar</button></div>
-        ${S.servicios.map(s => `<div class="row tight">${badgeSvc(s.id)}<div class="grow"><b>${esc(s.nombre)}</b><small>${s.perfiles} perfiles por cuenta · ${money(s.precio)}</small></div><button class="ib sm" data-a="editServicio" data-id="${s.id}" title="Editar">${icon('edit')}</button></div>`).join('')}</section>
+        ${S.servicios.map(s => `<div class="row tight">${badgeSvc(s.id)}<div class="grow"><b>${esc(s.nombre)}</b><small>${s.perfiles} perfiles por cuenta · ${money(s.precio)}${s.costo ? ' · costo ' + money(s.costo) : ''}</small></div><button class="ib sm" data-a="editServicio" data-id="${s.id}" title="Editar">${icon('edit')}</button></div>`).join('')}</section>
 
       <section class="card set-sec"><div class="card-h"><div><h3>Combos</h3><p style="color:var(--mut);font-size:13.5px">Elige un combo al vender y se llenan solas las apps.</p></div><button class="btn sm" data-a="nuevoCombo">${icon('plus')}Agregar</button></div>
         ${S.combos.length ? S.combos.map(listaCombo).join('') : emptyMini('Sin combos')}</section>
@@ -812,6 +819,7 @@ function vAjustes() {
         <div class="row-btns">
           <button class="btn pri" data-a="exportar">${icon('download')}Descargar respaldo</button>
           <button class="btn" data-a="importar">${icon('upload')}Restaurar respaldo</button>
+          <button class="btn" data-a="importar">${icon('upload')}Importar desde MrNetflix</button>
           <button class="btn ghost" data-a="exportCSV" data-id="ventas">Ventas CSV</button>
           <button class="btn ghost" data-a="exportCSV" data-id="clientes">Clientes CSV</button>
           <button class="btn ghost" data-a="exportCSV" data-id="cuentas">Cuentas CSV</button>
@@ -1025,6 +1033,7 @@ function guardarVenta(entregar) {
   }));
   S.subs.push(...nuevos);
   if (d.pagado) S.pagos.push({ id: uid(), clienteId: cid, subIds: nuevos.map(s => s.id), monto: sum(nuevos, 'precio'), fecha: hoy(), metodo: d.metodo, concepto: d.comboId ? 'Combo' : 'Venta' });
+  anotarCosto(nuevos, 'Costo');
   save();
   closeModal(); render();
   toast(nuevos.length > 1 ? `Combo guardado (${nuevos.length} apps) ✅` : 'Venta guardada ✅');
@@ -1085,6 +1094,7 @@ function modalSub(id) {
       <label class="fld"><span>Vence</span><input type="date" name="vence" value="${s.vence}" required></label></div>
       <label class="chk"><input type="checkbox" name="completa" ${s.completa ? 'checked' : ''}> Cuenta completa</label>
       <label class="chk"><input type="checkbox" name="pagado" ${s.pagado ? 'checked' : ''}> Pagado</label>
+      <label class="fld"><span>Datos de acceso propios (opcional)</span><textarea name="acceso" rows="3" placeholder="Para IPTV u otros sin cuenta madre: servidor, usuario, clave…">${esc(s.acceso || '')}</textarea></label>
       <label class="fld"><span>Notas</span><input name="notas" value="${esc(s.notas || '')}"></label>
       <p class="hint">Renovada ${s.renovaciones || 0} ${s.renovaciones === 1 ? 'vez' : 'veces'} · creada el ${fecha(String(s.creado || s.inicio).slice(0, 10))}</p>
     </div>
@@ -1101,6 +1111,7 @@ function modalCliente(id) {
       <label class="fld"><span>Nombre</span><input name="nombre" value="${esc(c.nombre)}" required autofocus></label>
       <label class="fld"><span>WhatsApp</span><input name="telefono" value="${esc(c.telefono)}" inputmode="tel" placeholder="300 123 4567"></label>
       <p class="hint">Si no pones indicativo se usa +${esc(S.settings.pais)} automáticamente.</p>
+      <label class="fld"><span>Lealtad (estrellas)</span><select name="estrellas">${[0, 1, 2, 3, 4, 5].map(n => `<option value="${n}" ${(c.estrellas || 0) === n ? 'selected' : ''}>${n ? '★'.repeat(n) : 'Sin estrellas'}</option>`).join('')}</select></label>
       <label class="fld"><span>Notas</span><textarea name="notas" rows="3" placeholder="Ej. paga por Nequi, prefiere perfil 2…">${esc(c.notas)}</textarea></label>
     </div>
     <div class="m-f">${id ? `<button type="button" class="btn ghost left" style="color:var(--bad)" data-a="delCliente" data-id="${id}">${icon('trash')}Eliminar</button>` : ''}<button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="submit" class="btn pri">Guardar</button></div>
@@ -1218,6 +1229,8 @@ function modalServicio(id) {
       <label class="fld"><span>Color</span><input type="color" name="color" value="${esc(s.color)}"></label></div>
       <div class="g2 keep"><label class="fld"><span>Perfiles por cuenta</span><input type="number" min="1" max="50" name="perfiles" value="${s.perfiles}"></label>
       <label class="fld"><span>Precio por perfil</span><input type="number" min="0" step="any" name="precio" value="${s.precio}"></label></div>
+      <label class="fld"><span>Costo por venta (opcional)</span><input type="number" min="0" step="any" name="costo" value="${s.costo || ''}" placeholder="0"></label>
+      <p class="hint">Para lo que vendes sin cuenta madre (IPTV, códigos, licencias…): este costo se anota como gasto en cada venta y renovación, así la ganancia sale real.</p>
       <label class="chk"><input type="checkbox" name="catalogo" ${s.catalogo ? 'checked' : ''}> Mostrar en la tienda</label>
     </div>
     <div class="m-f">${id ? `<button type="button" class="btn ghost left" style="color:var(--bad)" data-a="delServicio" data-id="${id}">${icon('trash')}Eliminar</button>` : ''}<button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="submit" class="btn pri">Guardar</button></div>
@@ -1343,6 +1356,14 @@ function procesarLogo(file) {
   r.onload = () => {
     const img = new Image();
     img.onload = () => {
+      // Ícono cuadrado 512×512 con fondo blanco para la app instalada (celular/PC)
+      try {
+        const ic = document.createElement('canvas'); ic.width = ic.height = 512;
+        const ix = ic.getContext('2d'); ix.fillStyle = '#ffffff'; ix.fillRect(0, 0, 512, 512);
+        const iw = img.width || 512, ih = img.height || 512, ik = 420 / Math.max(iw, ih);
+        ix.drawImage(img, (512 - iw * ik) / 2, (512 - ih * ik) / 2, iw * ik, ih * ik);
+        S.settings.logoIcono = ic.toDataURL('image/jpeg', 0.9);
+      } catch (e) { S.settings.logoIcono = ''; }
       const max = 256, k = Math.min(1, max / Math.max(img.width || max, img.height || max));
       const w = Math.max(1, Math.round((img.width || max) * k)), h = Math.max(1, Math.round((img.height || max) * k));
       const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
@@ -1370,7 +1391,7 @@ async function imagenCatalogo() {
   const x = cv.getContext('2d');
   const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#0b0d1c'); g.addColorStop(1, '#1a1030'); x.fillStyle = g; x.fillRect(0, 0, W, H);
   const glow = x.createRadialGradient(W, 0, 0, W, 0, 700); glow.addColorStop(0, 'rgba(255,106,43,.35)'); glow.addColorStop(1, 'rgba(255,106,43,0)'); x.fillStyle = glow; x.fillRect(0, 0, W, H);
-  const logo = await cargarImg(st.logo || 'icon.svg');
+  const logo = await cargarImg(st.logo || LOGO_BASE);
   if (logo) { x.save(); rrect(x, W / 2 - 85, 70, 170, 170, 40); x.clip(); x.fillStyle = '#fff'; x.fillRect(W / 2 - 85, 70, 170, 170); const k = Math.min(170 / logo.width, 170 / logo.height); x.drawImage(logo, W / 2 - logo.width * k / 2, 155 - logo.height * k / 2, logo.width * k, logo.height * k); x.restore(); }
   x.textAlign = 'center'; x.fillStyle = '#fff'; x.font = `800 64px ${F0}`; x.fillText(st.negocio, W / 2, 320, W - 120);
   x.fillStyle = '#ff8a4c'; x.font = `700 36px ${F0}`; x.fillText('LISTA DE PRECIOS', W / 2, 375);
@@ -1573,6 +1594,13 @@ function htmlSync() {
    ===================================================================== */
 function changed(msg) { save(); render(); refreshModal(); if (msg) toast(msg); }
 function done(msg) { save(); closeModal(); render(); if (msg) toast(msg); }
+// Gasto automático para servicios vendidos sin cuenta madre que tienen "costo por venta"
+function anotarCosto(subs, etiqueta) {
+  const sin = subs.filter(s => !s.cuentaId && Number(svc(s.servicioId)?.costo) > 0);
+  if (!sin.length) return;
+  const monto = sin.reduce((a, s) => a + Number(svc(s.servicioId).costo), 0);
+  S.gastos.push({ id: uid(), concepto: `${etiqueta} · ${sin.map(s => svc(s.servicioId).nombre).join(' + ')} · ${cliente(sin[0].clienteId)?.nombre || ''}`, monto, fecha: hoy(), categoria: 'Cuentas' });
+}
 function marcarPagado(subs, concepto = 'Pago') {
   const pend = subs.filter(s => !s.pagado);
   if (!pend.length) return;
@@ -1731,8 +1759,25 @@ const A = {
   copiarEnlace: id => { const s = subById(id); if (s) copiar(enlaceAcceso([s]), 'Enlace copiado'); },
   copiarMsg: id => { const s = subById(id); if (s) copiar(mensaje('entrega', [s]), 'Mensaje copiado'); },
   subirLogo: () => $('#logoFile').click(),
-  quitarLogo: () => { S.settings.logo = ''; changed('Logo quitado'); },
+  quitarLogo: () => { S.settings.logo = ''; S.settings.logoIcono = ''; changed('Logo quitado'); },
   imgCatalogo: () => imagenCatalogo(),
+  mrnImportar: () => {
+    const d = MRN_PEND; if (!d) return;
+    const rep = !!($('#mrnReemplazar') && $('#mrnReemplazar').checked);
+    MRN_PEND = null; closeModal(true);
+    let r;
+    try { r = importarMrn(d, rep); } catch (e) { console.error(e); toast('No se pudo importar: ' + e.message, 'bad'); return; }
+    save(); go('panel');
+    openModal(`${mHead('¡Datos de MrNetflix importados! ✅')}
+      <div class="m-b"><div class="list">
+        <div class="row tight">${icon('clientes')}<div class="grow"><b>${r.clientes} clientes nuevos</b><small>${r.actualizados ? r.actualizados + ' ya existían y se actualizaron' : 'con teléfono, estrellas y notas'}</small></div></div>
+        <div class="row tight">${icon('ventas')}<div class="grow"><b>${r.ventas} servicios activos</b><small>con su fecha de vencimiento</small></div></div>
+        <div class="row tight">${icon('tienda')}<div class="grow"><b>${r.servicios} servicios nuevos</b><small>con precio y costo de MrNetflix</small></div></div>
+        <div class="row tight">${icon('reportes')}<div class="grow"><b>${r.pagos} pagos y ${r.gastos} gastos</b><small>tu historial de ventas en Reportes</small></div></div>
+      </div>
+      <p class="hint" style="margin-top:12px">Siguiente paso: en <b>Cuentas</b> agrega tus cuentas madre (Netflix, Disney…) y en <b>Ajustes → Servicios</b> revisa cuántos perfiles tiene cada una. Si sigues usando MrNetflix unos días, puedes volver a importar el archivo: no se duplica nada.</p></div>
+      <div class="m-f"><button class="btn pri" data-a="cerrar">Listo</button></div>`, { size: 'small' });
+  },
   syncAhora: () => { if (syncOn()) { syncAhora(); toast('Sincronizando…'); } else go('ajustes'); },
   syncSalir: () => confirmar('¿Desconectar este dispositivo de la sincronización? Tus datos se quedan aquí, pero ya no se compartirán.', () => {
     SY = {}; sySave(); try { localStorage.removeItem(BKEY); } catch (e) { /* nada */ } setEst('off'); render(); toast('Sincronización desactivada');
@@ -1775,6 +1820,7 @@ const FORMS = {
       s.activa = true; s.pagado = pagado; s.renovaciones = (s.renovaciones || 0) + 1; s.recordado = ''; delete s.liberada;
     }
     if (pagado) S.pagos.push({ id: uid(), clienteId: subs[0].clienteId, subIds: subs.map(s => s.id), monto: sum(subs, 'precio'), fecha: hoy(), metodo: fd.get('metodo'), concepto: 'Renovación' });
+    anotarCosto(subs, 'Costo renovación');
     done(`Renovado hasta ${fecha(subs[0].vence)} ✅`);
     if (modo === 'avisar') abrirWA(subs[0].clienteId, mensaje('renovacion', subs));
   },
@@ -1784,7 +1830,7 @@ const FORMS = {
       clienteId: fd.get('clienteId'), servicioId: fd.get('servicioId'), cuentaId: fd.get('cuentaId') || '',
       perfil: String(fd.get('perfil') || '').trim(), pin: String(fd.get('pin') || '').trim(), precio: num(fd.get('precio')),
       completa: fd.get('completa') === 'on', inicio: fd.get('inicio') || s.inicio, vence: fd.get('vence') || s.vence,
-      pagado: fd.get('pagado') === 'on', notas: String(fd.get('notas') || '').trim(),
+      pagado: fd.get('pagado') === 'on', notas: String(fd.get('notas') || '').trim(), acceso: String(fd.get('acceso') || '').trim(),
     };
     if (n.cuentaId) {
       const c = cuenta(n.cuentaId);
@@ -1797,7 +1843,7 @@ const FORMS = {
   },
   cliente: (fd, f) => {
     const id = f.dataset.id;
-    const data = { nombre: String(fd.get('nombre') || '').trim(), telefono: String(fd.get('telefono') || '').trim(), notas: String(fd.get('notas') || '').trim() };
+    const data = { nombre: String(fd.get('nombre') || '').trim(), telefono: String(fd.get('telefono') || '').trim(), notas: String(fd.get('notas') || '').trim(), estrellas: num(fd.get('estrellas')) };
     if (!data.nombre) { toast('Escribe el nombre', 'bad'); return; }
     if (id) Object.assign(cliente(id), data); else S.clientes.push({ id: uid(), creado: hoy(), ...data });
     done(id ? 'Cliente actualizado' : 'Cliente creado');
@@ -1856,7 +1902,7 @@ const FORMS = {
   },
   servicio: (fd, f) => {
     const id = f.dataset.id;
-    const data = { nombre: String(fd.get('nombre') || '').trim(), color: fd.get('color') || '#ff6a2b', perfiles: Math.max(1, num(fd.get('perfiles'))), precio: num(fd.get('precio')), catalogo: fd.get('catalogo') === 'on' };
+    const data = { nombre: String(fd.get('nombre') || '').trim(), color: fd.get('color') || '#ff6a2b', perfiles: Math.max(1, num(fd.get('perfiles'))), precio: num(fd.get('precio')), costo: num(fd.get('costo')), catalogo: fd.get('catalogo') === 'on' };
     if (!data.nombre) { toast('Escribe el nombre', 'bad'); return; }
     if (id) Object.assign(svc(id), data); else S.servicios.push({ id: uid(), ...data });
     done(id ? 'Servicio actualizado' : 'Servicio agregado');
@@ -1943,15 +1989,138 @@ function importar(file) {
   const r = new FileReader();
   r.onload = () => {
     try {
-      const d = JSON.parse(r.result);
+      const txt = String(r.result || '').replace(/^\ufeff/, '').trim();
+      if (/^[^{[]*,/.test(txt.split('\n')[0]) && !txt.startsWith('{')) { toast('Ese archivo es una lista CSV (solo títulos y filas), no un respaldo. En MrNetflix usa “Exportar datos”.', 'bad'); $('#fileImport').value = ''; return; }
+      const d = JSON.parse(txt);
+      if (esMrNetflix(d)) { $('#fileImport').value = ''; modalImportMrn(d); return; }
       if (!d || !Array.isArray(d.subs) || !Array.isArray(d.cuentas)) throw new Error('formato');
       confirmar(`Restaurar respaldo con <b>${d.cuentas.length}</b> cuentas, <b>${(d.clientes || []).length}</b> clientes y <b>${d.subs.length}</b> ventas. Esto reemplaza los datos actuales.`, () => {
         S = normalizar(d); forzarSubida(); changed('Respaldo restaurado ✅'); go('panel');
       }, { txt: 'Restaurar', danger: false });
-    } catch (e) { toast('Ese archivo no es un respaldo válido', 'bad'); }
+    } catch (e) { toast('Ese archivo no es un respaldo de CuentasPro ni de MrNetflix', 'bad'); }
     $('#fileImport').value = '';
   };
   r.readAsText(file);
+}
+/* ---------- Importar desde MrNetflix ---------- */
+const norm = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const esMrNetflix = d => !!d && Array.isArray(d.clientes) && (Array.isArray(d.productos) || Array.isArray(d.transacciones)) && !Array.isArray(d.subs);
+const COLOR_KW = [['NETFLIX', '#e50914'], ['DISNEY', '#113ccf'], ['AMAZON', '#00a8e1'], ['PRIME', '#00a8e1'], ['HBO', '#7b2ff7'], ['STAR', '#c2185b'], ['SPOTIFY', '#1db954'], ['YOUTUBE', '#ff0033'], ['CRUNCHY', '#f47521'], ['PARAMOUNT', '#0064ff'], ['IPTV', '#ff6a2b'], ['OLEADA', '#0ea5e9'], ['PLEX', '#e5a00d'], ['CANVA', '#00a8b5'], ['OFFICE', '#d83b01'], ['CAPCUT', '#333333'], ['VIX', '#ff5a00'], ['APPLE', '#555555'], ['CHATGPT', '#10a37f'], ['DEZZER', '#a238ff'], ['DEEZER', '#a238ff'], ['WIN', '#00a651'], ['MEGA', '#e11d48'], ['UNIVERSAL', '#1e40af'], ['MAX', '#7b2ff7'], ['COMBO', '#ff6a2b'], ['PANTALLA', '#64748b']];
+const PERF_KW = [['NETFLIX', 5], ['DISNEY', 7], ['AMAZON', 6], ['PRIME', 6], ['HBO', 5], ['MAX', 5], ['STAR', 7], ['SPOTIFY', 6], ['YOUTUBE', 6], ['CRUNCHY', 4], ['PARAMOUNT', 6], ['VIX', 5], ['UNIVERSAL', 5]];
+function hslHex(h, sat, l) {
+  sat /= 100; l /= 100;
+  const f = n => { const k = (n + h / 30) % 12, a = sat * Math.min(l, 1 - l); const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); return Math.round(c * 255).toString(16).padStart(2, '0'); };
+  return '#' + f(0) + f(8) + f(4);
+}
+const colorPara = n => { const k = norm(n); const m = COLOR_KW.find(([w]) => k.includes(w)); return m ? m[1] : hslHex(hue(n), 60, 45); };
+const perfilesPara = n => { const k = norm(n); const m = PERF_KW.find(([w]) => k.includes(w)); return m ? m[1] : 1; };
+function fechaLocal(v) {
+  if (v == null || v === '') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return String(v);
+  const d = new Date(typeof v === 'number' ? v : String(v));
+  return isNaN(d) ? '' : toISO(d);
+}
+let MRN_PEND = null;
+function modalImportMrn(d) {
+  MRN_PEND = d;
+  const tx = d.transacciones || [];
+  const ya = S.subs.some(s => String(s.origen || '').startsWith('mrn:'));
+  const hay = S.clientes.length || S.subs.length || S.cuentas.length;
+  const demo = S.cuentas.some(c => /@correo\.com$/.test(c.correo)) || S.clientes.some(c => c.nombre === 'María Torres' && c.telefono && c.telefono.length === 10);
+  openModal(`${mHead('Importar desde MrNetflix')}
+    <div class="m-b">
+      <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
+        ${kpi('Clientes', d.clientes.length, 'con su vencimiento', 'acc', 'noop')}
+        ${kpi('Productos', (d.productos || []).length, 'pasan a Servicios', '', 'noop')}
+        ${kpi('Ventas', tx.length, 'pasan a Reportes', 'ok', 'noop')}
+        ${kpi('Total vendido', money(sum(tx, 'precio')), 'ganancia ' + money(sum(tx, 'ganancia')), 'ok', 'noop')}
+      </div>
+      <p class="hint" style="margin:0 0 12px">Cada <b>producto</b> queda como servicio con su precio y costo. Cada <b>cliente</b> queda con su servicio, teléfono, estrellas y fecha de vencimiento (y los datos de acceso que tenía guardados). Cada <b>venta</b> queda como pago en Reportes y su costo como gasto del mes, para que la ganancia dé igual que en MrNetflix.</p>
+      ${ya ? `<div class="banner">${icon('check')}<span>Ya importaste de MrNetflix antes: solo se agregan las ventas nuevas y se actualizan vencimientos y teléfonos. <b>No se duplica nada.</b></span></div>` : ''}
+      ${hay ? `<label class="chk"><input type="checkbox" id="mrnReemplazar" ${demo && !ya ? 'checked' : ''}> Borrar primero lo que hay ahora en CuentasPro${demo ? ' (son datos de ejemplo)' : ''}</label>` : ''}
+    </div>
+    <div class="m-f"><button class="btn" data-a="cerrar">Cancelar</button><button class="btn pri" data-a="mrnImportar">${icon('upload')}Importar</button></div>`);
+}
+function importarMrn(d, reemplazar) {
+  const r = { servicios: 0, clientes: 0, actualizados: 0, ventas: 0, pagos: 0, gastos: 0 };
+  if (reemplazar) { for (const k of ['cuentas', 'clientes', 'subs', 'pagos', 'gastos', 'combos', 'servicios']) borrar(k, () => true); }
+  // Productos → servicios
+  const porId = new Map(), porNombre = new Map(S.servicios.map(x => [norm(x.nombre), x]));
+  for (const p of d.productos || []) {
+    const k = norm(p.nombre); if (!k) continue;
+    let sv = S.servicios.find(x => x.origen === 'mrn:p' + p.id) || porNombre.get(k);
+    const precio = num(p.cliente) || num(p.vendedor);
+    if (!sv) {
+      sv = { id: uid(), nombre: String(p.nombre).trim(), color: colorPara(p.nombre), perfiles: perfilesPara(p.nombre), precio, costo: num(p.costo), precioRevendedor: num(p.vendedor), catalogo: p.activo !== false, origen: 'mrn:p' + p.id };
+      S.servicios.push(sv); porNombre.set(k, sv); r.servicios++;
+    } else if (String(sv.origen || '').startsWith('mrn:')) { sv.precio = precio || sv.precio; sv.costo = num(p.costo); sv.precioRevendedor = num(p.vendedor); }
+    porId.set(p.id, sv);
+  }
+  const buscarSvc = nombre => {
+    const k = norm(nombre); if (!k) return null;
+    if (porNombre.has(k)) return porNombre.get(k);
+    const c = [...porNombre.entries()].filter(([n]) => n.length > 2 && (n.startsWith(k) || k.startsWith(n)));
+    return c.length === 1 ? c[0][1] : null;
+  };
+  // Ventas por cliente (la más reciente primero)
+  const txPorCli = new Map();
+  for (const t of d.transacciones || []) { if (!txPorCli.has(t.clienteId)) txPorCli.set(t.clienteId, []); txPorCli.get(t.clienteId).push(t); }
+  for (const l of txPorCli.values()) l.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  // Clientes → clientes + ventas activas
+  const cliPorMrn = new Map();
+  for (const c of d.clientes) {
+    const nombre = String(c.nombre || '').trim() || 'Sin nombre';
+    let tel = String(c.tel || '').trim(); if (tel.replace(/\D/g, '').length < 7) tel = '';
+    const org = 'mrn:' + c.id;
+    let cl = S.clientes.find(x => (x.origenes || []).includes(org))
+      || S.clientes.find(x => norm(x.nombre) === norm(nombre) && (!tel || !x.telefono || normTel(x.telefono) === normTel(tel)));
+    const txs = txPorCli.get(c.id) || [], ult = txs[0];
+    if (!cl) {
+      const creado = (typeof c.id === 'number' && c.id > 1e12 ? fechaLocal(c.id) : '') || fechaLocal(txs.length ? txs[txs.length - 1].fecha : '') || hoy();
+      cl = { id: uid(), nombre, telefono: tel, notas: '', creado, estrellas: num(c.estrellas), origenes: [] };
+      S.clientes.push(cl); r.clientes++;
+    } else { if (tel && !cl.telefono) cl.telefono = tel; if (c.estrellas != null) cl.estrellas = num(c.estrellas); }
+    if (!cl.origenes) cl.origenes = [];
+    if (!cl.origenes.includes(org)) cl.origenes.push(org);
+    cliPorMrn.set(c.id, cl.id);
+    let sv = buscarSvc(c.servicio) || (ult && porId.get(ult.productoId));
+    if (!sv) {
+      sv = { id: uid(), nombre: String(c.servicio || 'Servicio').trim(), color: colorPara(c.servicio), perfiles: perfilesPara(c.servicio), precio: ult ? num(ult.precio) : 0, costo: ult ? num(ult.costo) : 0, catalogo: false, origen: 'mrn:s' + norm(c.servicio) };
+      S.servicios.push(sv); porNombre.set(norm(sv.nombre), sv); r.servicios++;
+    }
+    const vence = fechaLocal(c.vence) || addDays(hoy(), num(c.dias));
+    const acceso = String(c.cuenta || '').trim();
+    let sub = S.subs.find(x => x.origen === org);
+    if (sub) {
+      sub.clienteId = cl.id; sub.servicioId = sv.id; sub.vence = vence; sub.activa = true;
+      if (acceso) sub.acceso = acceso;
+      r.actualizados++;
+    } else {
+      let inicio = ult ? fechaLocal(ult.fecha) : '';
+      if (!inicio || inicio > vence) inicio = addDays(vence, -30);
+      S.subs.push({ id: uid(), ventaId: uid(), clienteId: cl.id, servicioId: sv.id, cuentaId: '', perfil: '', pin: '', precio: ult ? num(ult.precio) : sv.precio,
+        completa: false, inicio, vence, pagado: true, activa: true, notas: '', acceso, creado: new Date().toISOString(), renovaciones: Math.max(0, txs.length - 1), comboId: '', origen: org });
+      r.ventas++;
+    }
+  }
+  // Transacciones → pagos (+ costo como gasto del mes)
+  const ya = new Set(S.pagos.map(p => p.origen).filter(Boolean));
+  const gastos = {};
+  for (const t of d.transacciones || []) {
+    const org = 'mrn:t' + t.id; if (ya.has(org)) continue;
+    const f = fechaLocal(t.fecha) || hoy();
+    let cid = cliPorMrn.get(t.clienteId);
+    if (!cid) { const m = S.clientes.find(x => norm(x.nombre) === norm(t.clienteNombre)); cid = m ? m.id : ''; }
+    const sv = porId.get(t.productoId) || buscarSvc(t.productoNombre);
+    S.pagos.push({ id: uid(), clienteId: cid, clienteNombre: String(t.clienteNombre || ''), subIds: [], servicioId: sv ? sv.id : '', monto: num(t.precio), fecha: f, metodo: 'MrNetflix', concepto: String(t.productoNombre || 'Venta'), origen: org });
+    r.pagos++;
+    if (num(t.costo) > 0) { const ym = mesDe(f); if (!gastos[ym]) gastos[ym] = { monto: 0, fecha: f, n: 0 }; gastos[ym].monto += num(t.costo); gastos[ym].n++; if (f > gastos[ym].fecha) gastos[ym].fecha = f; }
+  }
+  for (const [ym, g] of Object.entries(gastos)) {
+    S.gastos.push({ id: uid(), concepto: `Costo de ${g.n} venta${g.n > 1 ? 's' : ''} de MrNetflix (${mesLabel(ym)})`, monto: g.monto, fecha: g.fecha, categoria: 'Cuentas', origen: 'mrn:g' + ym });
+    r.gastos++;
+  }
+  return r;
 }
 function exportarCSV(tipo) {
   let rows = [];

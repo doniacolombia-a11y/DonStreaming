@@ -1,6 +1,6 @@
 {
-  "name": "CuentasPro · Gestión de streaming",
-  "short_name": "CuentasPro",
+  "name": "Don Streaming",
+  "short_name": "Don Streaming",
   "description": "Ventas, combos, cuentas madre, perfiles libres, cobros y ganancias en un solo lugar.",
   "lang": "es",
   "start_url": "./#panel",
@@ -10,9 +10,18 @@
   "background_color": "#090b16",
   "theme_color": "#090b16",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icon-maskable.png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
   ]
 }
